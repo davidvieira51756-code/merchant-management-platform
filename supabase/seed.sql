@@ -11,18 +11,7 @@ values
     'merchant.two@example.com',
     '{"full_name":"Merchant Two"}'::jsonb
   );
-
-insert into public.profiles (id, full_name)
-values
-  (
-    '11111111-1111-4111-8111-111111111111',
-    'Merchant One'
-  ),
-  (
-    '22222222-2222-4222-8222-222222222222',
-    'Merchant Two'
-  );
-
+  
 insert into public.stores (
   id,
   merchant_id,
