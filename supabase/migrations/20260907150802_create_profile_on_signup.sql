@@ -5,8 +5,6 @@ security definer
 set search_path = public
 as $$
 begin
--- Test-only Auth users used as deterministic fixtures for local seed data
--- and Row Level Security testing. These accounts are not intended for login.
   insert into public.profiles (id, full_name)
   values (
     new.id,
