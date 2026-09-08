@@ -1,16 +1,25 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import {
   productSchema,
-  ProductFormInput,
-  ProductFormValues,
+  type ProductFormInput,
+  type ProductFormValues,
 } from "@/lib/validations/products";
+
+const fieldClassName =
+  "w-full min-w-0 rounded-lg border border-input bg-card px-3 text-base text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/20 sm:text-sm";
+
+const labelClassName = "mb-2 block text-sm font-medium";
+
+const errorClassName = "mt-2 text-sm text-destructive";
 
 export default function EditProductPage() {
   const params = useParams();
@@ -94,135 +103,249 @@ export default function EditProductPage() {
     router.refresh();
   }
 
-  if (loading) {
-    return (
-      <main className="min-h-screen p-8">
-        <p>Loading...</p>
-      </main>
-    );
-  }
-
   return (
-    <main className="min-h-screen p-8">
-      <div className="mx-auto max-w-xl">
-        <h1 className="text-3xl font-semibold">Edit Product</h1>
-
-        <p className="mt-2 text-sm text-muted-foreground">
-          Update product information.
-        </p>
-
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-          className="mt-6 space-y-4"
+    <main className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-3xl">
+        <Link
+          href={`/dashboard/stores/${storeId}/products`}
+          className="inline-flex min-h-10 items-center gap-2 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <div>
-            <label
-              htmlFor="name"
-              className="mb-1 block text-sm font-medium"
+          <span aria-hidden="true">←</span>
+          Back to products
+        </Link>
+
+        <header className="mt-6">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Edit product
+          </h1>
+
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Update product details, price and availability.
+          </p>
+        </header>
+
+        {loading ? (
+          <div role="status" className="mt-8">
+            <span className="sr-only">Loading product details...</span>
+
+            <div
+              aria-hidden="true"
+              className="space-y-6 motion-safe:animate-pulse"
             >
-              Name
-            </label>
+              <div className="h-5 w-32 rounded bg-muted" />
 
-            <input
-              id="name"
-              {...register("name")}
-              className="w-full rounded-md border px-3 py-2"
-            />
+              <div className="space-y-2">
+                <div className="h-4 w-24 rounded bg-muted" />
+                <div className="h-11 rounded-lg bg-muted" />
+              </div>
 
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.name.message}
-              </p>
+              <div className="space-y-2">
+                <div className="h-4 w-24 rounded bg-muted" />
+                <div className="h-32 rounded-lg bg-muted" />
+              </div>
+
+              <div className="border-t" />
+
+              <div className="h-5 w-44 rounded bg-muted" />
+
+              <div className="grid gap-6 sm:grid-cols-2 sm:gap-8">
+                <div className="space-y-2">
+                  <div className="h-4 w-20 rounded bg-muted" />
+                  <div className="h-11 rounded-lg bg-muted" />
+                </div>
+
+                <div className="space-y-3 sm:pt-7">
+                  <div className="h-5 w-28 rounded bg-muted" />
+                  <div className="h-3 w-48 max-w-full rounded bg-muted" />
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            aria-busy={isSubmitting}
+            className="mt-8"
+          >
+            <fieldset className="min-w-0">
+              <legend className="text-base font-semibold">
+                Product details
+              </legend>
+
+              <div className="mt-5 space-y-5">
+                <div>
+                  <label htmlFor="name" className={labelClassName}>
+                    Product name
+                  </label>
+
+                  <input
+                    id="name"
+                    placeholder="e.g. Cotton tote bag"
+                    {...register("name")}
+                    aria-invalid={Boolean(errors.name)}
+                    aria-describedby={
+                      errors.name ? "name-error" : undefined
+                    }
+                    className={`${fieldClassName} h-11`}
+                  />
+
+                  {errors.name && (
+                    <p id="name-error" className={errorClassName}>
+                      {errors.name.message}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="description"
+                    className={labelClassName}
+                  >
+                    Description
+                  </label>
+
+                  <textarea
+                    id="description"
+                    rows={4}
+                    placeholder="Describe the product and its main features."
+                    {...register("description")}
+                    aria-invalid={Boolean(errors.description)}
+                    aria-describedby={
+                      errors.description
+                        ? "description-error"
+                        : undefined
+                    }
+                    className={`${fieldClassName} min-h-28 resize-y py-3 leading-6`}
+                  />
+
+                  {errors.description && (
+                    <p
+                      id="description-error"
+                      className={errorClassName}
+                    >
+                      {errors.description.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </fieldset>
+
+            <div className="my-8 border-t" />
+
+            <fieldset className="min-w-0">
+              <legend className="text-base font-semibold">
+                Price and availability
+              </legend>
+
+              <div className="mt-5 grid gap-6 sm:grid-cols-2 sm:gap-8">
+                <div>
+                  <label htmlFor="price" className={labelClassName}>
+                    Price (EUR)
+                  </label>
+
+                  <div className="relative">
+                    <span
+                      aria-hidden="true"
+                      className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-muted-foreground"
+                    >
+                      €
+                    </span>
+
+                    <input
+                      id="price"
+                      type="number"
+                      step="0.01"
+                      inputMode="decimal"
+                      {...register("price")}
+                      aria-invalid={Boolean(errors.price)}
+                      aria-describedby={
+                        errors.price ? "price-error" : undefined
+                      }
+                      className={`${fieldClassName} h-11 pl-8 tabular-nums`}
+                    />
+                  </div>
+
+                  {errors.price && (
+                    <p id="price-error" className={errorClassName}>
+                      {errors.price.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="sm:pt-7">
+                  <label
+                    htmlFor="available"
+                    className="flex min-h-11 cursor-pointer items-start gap-3 py-2"
+                  >
+                    <input
+                      id="available"
+                      type="checkbox"
+                      {...register("available")}
+                      aria-invalid={Boolean(errors.available)}
+                      aria-describedby={
+                        errors.available
+                          ? "available-hint available-error"
+                          : "available-hint"
+                      }
+                      className="mt-0.5 size-4 shrink-0 cursor-pointer accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    />
+
+                    <span className="text-sm font-medium">
+                      Available
+                    </span>
+                  </label>
+
+                  <p
+                    id="available-hint"
+                    className="ml-7 text-xs leading-5 text-muted-foreground"
+                  >
+                    Mark this product as available in this store.
+                  </p>
+
+                  {errors.available && (
+                    <p
+                      id="available-error"
+                      className={errorClassName}
+                    >
+                      {errors.available.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </fieldset>
+
+            {errorMessage && (
+              <div
+                role="alert"
+                className="mt-6 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+              >
+                {errorMessage}
+              </div>
             )}
-          </div>
 
-          <div>
-            <label
-              htmlFor="description"
-              className="mb-1 block text-sm font-medium"
-            >
-              Description
-            </label>
+            <div className="mt-8 flex flex-wrap items-center justify-end gap-3 border-t pt-6">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  router.push(`/dashboard/stores/${storeId}/products`)
+                }
+                className="h-11 px-5"
+              >
+                Cancel
+              </Button>
 
-            <textarea
-              id="description"
-              {...register("description")}
-              rows={4}
-              className="w-full rounded-md border px-3 py-2"
-            />
-
-            {errors.description && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.description.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label
-              htmlFor="price"
-              className="mb-1 block text-sm font-medium"
-            >
-              Price
-            </label>
-
-            <input
-              id="price"
-              type="number"
-              step="0.01"
-              {...register("price")}
-              className="w-full rounded-md border px-3 py-2"
-            />
-
-            {errors.price && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.price.message}
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              id="available"
-              type="checkbox"
-              {...register("available")}
-            />
-
-            <label
-              htmlFor="available"
-              className="text-sm font-medium"
-            >
-              Available
-            </label>
-          </div>
-
-          {errorMessage && (
-            <p className="text-sm text-red-600">
-              {errorMessage}
-            </p>
-          )}
-
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
-            >
-              {isSubmitting ? "Saving..." : "Save Changes"}
-            </button>
-
-            <button
-              type="button"
-              onClick={() =>
-                router.push(`/dashboard/stores/${storeId}/products`)
-              }
-              className="rounded-md border px-4 py-2"
-            >
-              Cancel
-            </button>
-          </div>
-        </form>
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="h-11 min-w-32 px-5"
+              >
+                {isSubmitting ? "Saving..." : "Save changes"}
+              </Button>
+            </div>
+          </form>
+        )}
       </div>
     </main>
   );

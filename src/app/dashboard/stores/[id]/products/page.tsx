@@ -1,5 +1,9 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+
+import { buttonVariants } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/server";
+
 import RemoveProductButton from "./remove-product-button";
 
 type ProductsPageProps = {
@@ -44,82 +48,170 @@ export default async function ProductsPage({
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex items-center justify-between">
-          <div>
-            <a
-              href="/dashboard"
-              className="text-sm text-muted-foreground underline"
-            >
-              Back to dashboard
-            </a>
+    <main className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10 lg:px-8">
+      <div className="mx-auto max-w-6xl">
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-10 items-center gap-2 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span aria-hidden="true">←</span>
+          Back to dashboard
+        </Link>
 
-            <h1 className="mt-3 text-3xl font-semibold">
+        <header className="mt-6 flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <h1 className="break-words text-3xl font-semibold tracking-tight [overflow-wrap:anywhere]">
               {store.name}
             </h1>
 
-            <p className="mt-2 text-sm text-muted-foreground">
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">
               Manage products for this store.
             </p>
           </div>
 
-          <a
+          <Link
             href={`/dashboard/stores/${storeId}/products/new`}
-            className="rounded-md bg-black px-4 py-2 text-sm text-white"
+            className={buttonVariants({
+              className: "h-11 w-full gap-2 px-5 sm:w-auto",
+            })}
           >
-            Add Product
-          </a>
-        </div>
+            <span aria-hidden="true" className="text-lg leading-none">
+              +
+            </span>
+            Add product
+          </Link>
+        </header>
 
-        <section className="mt-8">
-          <h2 className="text-xl font-semibold">Products</h2>
+        <section aria-labelledby="products-heading" className="mt-10">
+          <div className="mb-4 flex items-center gap-3">
+            <h2
+              id="products-heading"
+              className="text-lg font-semibold tracking-tight"
+            >
+              Products
+            </h2>
+
+            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium tabular-nums text-secondary-foreground">
+              {products.length}
+            </span>
+          </div>
 
           {products.length === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">
-              No products yet.
-            </p>
+            <div className="flex flex-col items-center border-y px-6 py-16 text-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="size-10 text-muted-foreground"
+              >
+                <path d="m12 3 9 5v8l-9 5-9-5V8l9-5Z" />
+                <path d="m3 8 9 5 9-5" />
+                <path d="M12 13v8" />
+                <path d="m7.5 5.5 9 5" />
+              </svg>
+
+              <h3 className="mt-5 text-lg font-semibold">
+                No products yet
+              </h3>
+
+              <p className="mt-2 max-w-sm text-sm leading-6 text-muted-foreground">
+                Add your first product to this store.
+              </p>
+
+              <Link
+                href={`/dashboard/stores/${storeId}/products/new`}
+                className={buttonVariants({
+                  className: "mt-6 h-11 px-5",
+                })}
+              >
+                Add your first product
+              </Link>
+            </div>
           ) : (
-            <div className="mt-4 space-y-3">
-              {products.map((product) => (
-                <div
-                  key={product.id}
-                  className="rounded-lg border p-4"
-                >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-medium">
+            <div className="border-y bg-card">
+              <div
+                aria-hidden="true"
+                className="hidden grid-cols-[minmax(0,1fr)_7rem_9rem_11rem] items-center gap-6 border-b bg-muted/40 px-5 py-3 text-xs font-medium text-muted-foreground lg:grid"
+              >
+                <span>Product</span>
+                <span className="text-right">Price</span>
+                <span>Availability</span>
+                <span className="text-center">Actions</span>
+              </div>
+
+              <ul className="divide-y divide-border">
+                {products.map((product) => (
+                  <li
+                    key={product.id}
+                    className="grid min-w-0 grid-cols-1 gap-4 px-5 py-5 transition-colors hover:bg-muted/20 lg:grid-cols-[minmax(0,1fr)_7rem_9rem_11rem] lg:items-center lg:gap-6"
+                  >
+                    <div className="min-w-0">
+                      <h3 className="break-words text-sm font-semibold [overflow-wrap:anywhere]">
                         {product.name}
                       </h3>
 
-                      <p className="mt-1 text-sm text-muted-foreground">
+                      <p className="mt-1.5 break-words text-sm leading-6 text-muted-foreground [overflow-wrap:anywhere]">
                         {product.description || "No description"}
-                      </p>
-
-                      <p className="mt-2 text-sm">
-                        €{Number(product.price).toFixed(2)}
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-4">
-                      <span className="text-sm">
+                    <p className="text-sm font-medium tabular-nums lg:text-right">
+                      <span className="mr-2 font-normal text-muted-foreground lg:sr-only">
+                        Price:
+                      </span>
+                      €{Number(product.price).toFixed(2)}
+                    </p>
+
+                    <div>
+                      <span className="sr-only">Availability: </span>
+
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                          product.available
+                            ? "bg-emerald-50 text-emerald-700"
+                            : "bg-secondary text-secondary-foreground"
+                        }`}
+                      >
+                        <span
+                          aria-hidden="true"
+                          className={`size-1.5 rounded-full ${
+                            product.available
+                              ? "bg-emerald-600"
+                              : "bg-slate-400"
+                          }`}
+                        />
                         {product.available
                           ? "Available"
                           : "Unavailable"}
                       </span>
+                    </div>
 
-                      <a
+                    <div className="flex min-w-0 items-start gap-2 border-t border-border/60 pt-3 lg:justify-center lg:border-0 lg:pt-0">
+                    <Link
                         href={`/dashboard/stores/${storeId}/products/${product.id}/edit`}
-                        className="text-sm font-medium underline"
-                      >
+                        aria-label={`Edit ${product.name}`}
+                        className={buttonVariants({
+                        variant: "ghost",
+                        className: "h-10 w-16 px-0",
+                        })}
+                    >
                         Edit
-                      </a>
+                    </Link>
 
+                    <div className="w-24 shrink-0 [&_p]:break-words [&_p]:[overflow-wrap:anywhere]">
                         <RemoveProductButton productId={product.id} />
                     </div>
-                  </div>
-                </div>
-              ))}
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </section>

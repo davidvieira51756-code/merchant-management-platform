@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
 type RemoveProductButtonProps = {
@@ -51,18 +52,23 @@ export default function RemoveProductButton({
   }
 
   return (
-    <div>
-      <button
+    <div className="min-w-0">
+      <Button
         type="button"
+        variant="ghost"
         onClick={handleRemove}
         disabled={loading}
-        className="text-sm font-medium text-red-600 disabled:opacity-50"
+        aria-busy={loading}
+        className="h-10 min-w-24 px-3 text-destructive hover:bg-destructive/10 hover:text-destructive focus-visible:border-destructive focus-visible:ring-destructive/20"
       >
         {loading ? "Removing..." : "Remove"}
-      </button>
+      </Button>
 
       {errorMessage && (
-        <p className="mt-1 text-xs text-red-600">
+        <p
+          role="alert"
+          className="mt-2 break-words text-xs leading-5 text-destructive [overflow-wrap:anywhere]"
+        >
           {errorMessage}
         </p>
       )}

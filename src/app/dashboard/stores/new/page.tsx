@@ -1,15 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
+import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 import {
   storeSchema,
-  StoreFormValues,
+  type StoreFormValues,
 } from "@/lib/validations/store";
+
+const inputClassName =
+  "h-11 w-full min-w-0 rounded-lg border border-input bg-card px-3 text-base text-foreground shadow-sm outline-none transition-colors placeholder:text-muted-foreground/70 focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/20 aria-invalid:border-destructive aria-invalid:focus-visible:ring-destructive/20 sm:text-sm";
+
+const labelClassName = "mb-2 block text-sm font-medium";
+
+const errorClassName = "mt-2 text-sm text-destructive";
 
 export default function NewStorePage() {
   const router = useRouter();
@@ -70,190 +79,246 @@ export default function NewStorePage() {
   }
 
   return (
-    <main className="min-h-screen p-8">
-      <div className="mx-auto max-w-xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-semibold">Create Store</h1>
+    <main className="min-h-screen bg-background px-4 py-8 sm:px-6 sm:py-10">
+      <div className="mx-auto max-w-3xl">
+        <Link
+          href="/dashboard"
+          className="inline-flex min-h-10 items-center gap-2 rounded-md text-sm text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <span aria-hidden="true">←</span>
+          Back to dashboard
+        </Link>
 
-          <p className="mt-2 text-sm text-muted-foreground">
-            Add a new store to your account.
+        <header className="mt-6">
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Create store
+          </h1>
+
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Add your store details and location.
           </p>
-        </div>
+        </header>
 
         <form
           onSubmit={handleSubmit(onSubmit)}
           noValidate
-          className="space-y-4"
+          aria-busy={isSubmitting}
+          className="mt-8"
         >
-          <div>
-            <label
-              htmlFor="name"
-              className="mb-1 block text-sm font-medium"
-            >
-              Name
-            </label>
+          <fieldset className="min-w-0">
+            <legend className="text-base font-semibold">
+              Store details
+            </legend>
 
-            <input
-              id="name"
-              {...register("name")}
-              className="w-full rounded-md border px-3 py-2"
-            />
+            <div className="mt-5 grid gap-5 sm:grid-cols-2 sm:gap-6">
+              <div>
+                <label htmlFor="name" className={labelClassName}>
+                  Store name
+                </label>
 
-            {errors.name && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.name.message}
-              </p>
-            )}
-          </div>
+                <input
+                  id="name"
+                  autoComplete="organization"
+                  placeholder="e.g. Braga Central"
+                  {...register("name")}
+                  aria-invalid={Boolean(errors.name)}
+                  aria-describedby={errors.name ? "name-error" : undefined}
+                  className={inputClassName}
+                />
 
-          <div>
-            <label
-              htmlFor="street"
-              className="mb-1 block text-sm font-medium"
-            >
-              Street
-            </label>
+                {errors.name && (
+                  <p id="name-error" className={errorClassName}>
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
 
-            <input
-              id="street"
-              {...register("street")}
-              className="w-full rounded-md border px-3 py-2"
-            />
+              <div>
+                <label htmlFor="phone" className={labelClassName}>
+                  Phone
+                </label>
 
-            {errors.street && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.street.message}
-              </p>
-            )}
-          </div>
+                <input
+                  id="phone"
+                  type="tel"
+                  autoComplete="tel"
+                  placeholder="e.g. +351 253 123 456"
+                  {...register("phone")}
+                  aria-invalid={Boolean(errors.phone)}
+                  aria-describedby={errors.phone ? "phone-error" : undefined}
+                  className={inputClassName}
+                />
 
-          <div>
-            <label
-              htmlFor="city"
-              className="mb-1 block text-sm font-medium"
-            >
-              City
-            </label>
+                {errors.phone && (
+                  <p id="phone-error" className={errorClassName}>
+                    {errors.phone.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </fieldset>
 
-            <input
-              id="city"
-              {...register("city")}
-              className="w-full rounded-md border px-3 py-2"
-            />
+          <div className="my-8 border-t" />
 
-            {errors.city && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.city.message}
-              </p>
-            )}
-          </div>
+          <fieldset className="min-w-0">
+            <legend className="text-base font-semibold">
+              Location
+            </legend>
 
-          <div>
-            <label
-              htmlFor="state"
-              className="mb-1 block text-sm font-medium"
-            >
-              State
-            </label>
+            <div className="mt-5 grid gap-5 sm:grid-cols-2 sm:gap-6">
+              <div className="sm:col-span-2">
+                <label htmlFor="street" className={labelClassName}>
+                  Street address
+                </label>
 
-            <input
-              id="state"
-              {...register("state")}
-              className="w-full rounded-md border px-3 py-2"
-            />
+                <input
+                  id="street"
+                  autoComplete="address-line1"
+                  placeholder="Street name and number"
+                  {...register("street")}
+                  aria-invalid={Boolean(errors.street)}
+                  aria-describedby={
+                    errors.street ? "street-error" : undefined
+                  }
+                  className={inputClassName}
+                />
 
-            {errors.state && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.state.message}
-              </p>
-            )}
-          </div>
+                {errors.street && (
+                  <p id="street-error" className={errorClassName}>
+                    {errors.street.message}
+                  </p>
+                )}
+              </div>
 
-          <div>
-            <label
-              htmlFor="zipCode"
-              className="mb-1 block text-sm font-medium"
-            >
-              Zip Code
-            </label>
+              <div>
+                <label htmlFor="city" className={labelClassName}>
+                  City
+                </label>
 
-            <input
-              id="zipCode"
-              {...register("zipCode")}
-              className="w-full rounded-md border px-3 py-2"
-            />
+                <input
+                  id="city"
+                  autoComplete="address-level2"
+                  placeholder="e.g. Braga"
+                  {...register("city")}
+                  aria-invalid={Boolean(errors.city)}
+                  aria-describedby={errors.city ? "city-error" : undefined}
+                  className={inputClassName}
+                />
 
-            {errors.zipCode && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.zipCode.message}
-              </p>
-            )}
-          </div>
+                {errors.city && (
+                  <p id="city-error" className={errorClassName}>
+                    {errors.city.message}
+                  </p>
+                )}
+              </div>
 
-          <div>
-            <label
-              htmlFor="phone"
-              className="mb-1 block text-sm font-medium"
-            >
-              Phone
-            </label>
+              <div>
+                <label htmlFor="state" className={labelClassName}>
+                  State / Region
+                </label>
 
-            <input
-              id="phone"
-              {...register("phone")}
-              className="w-full rounded-md border px-3 py-2"
-            />
+                <input
+                  id="state"
+                  autoComplete="address-level1"
+                  placeholder="e.g. Braga"
+                  {...register("state")}
+                  aria-invalid={Boolean(errors.state)}
+                  aria-describedby={errors.state ? "state-error" : undefined}
+                  className={inputClassName}
+                />
 
-            {errors.phone && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.phone.message}
-              </p>
-            )}
-          </div>
+                {errors.state && (
+                  <p id="state-error" className={errorClassName}>
+                    {errors.state.message}
+                  </p>
+                )}
+              </div>
 
-          <div>
-            <label
-              htmlFor="timezone"
-              className="mb-1 block text-sm font-medium"
-            >
-              Timezone
-            </label>
+              <div>
+                <label htmlFor="zipCode" className={labelClassName}>
+                  Postal code
+                </label>
 
-            <input
-              id="timezone"
-              {...register("timezone")}
-              className="w-full rounded-md border px-3 py-2"
-            />
+                <input
+                  id="zipCode"
+                  autoComplete="postal-code"
+                  placeholder="e.g. 4700-001"
+                  {...register("zipCode")}
+                  aria-invalid={Boolean(errors.zipCode)}
+                  aria-describedby={
+                    errors.zipCode ? "zipCode-error" : undefined
+                  }
+                  className={inputClassName}
+                />
 
-            {errors.timezone && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.timezone.message}
-              </p>
-            )}
-          </div>
+                {errors.zipCode && (
+                  <p id="zipCode-error" className={errorClassName}>
+                    {errors.zipCode.message}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="timezone" className={labelClassName}>
+                  Timezone
+                </label>
+
+                <input
+                  id="timezone"
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  {...register("timezone")}
+                  aria-invalid={Boolean(errors.timezone)}
+                  aria-describedby={
+                    errors.timezone
+                      ? "timezone-hint timezone-error"
+                      : "timezone-hint"
+                  }
+                  className={inputClassName}
+                />
+
+                <p
+                  id="timezone-hint"
+                  className="mt-2 text-xs leading-5 text-muted-foreground"
+                >
+                  Use a timezone such as Europe/Lisbon.
+                </p>
+
+                {errors.timezone && (
+                  <p id="timezone-error" className={errorClassName}>
+                    {errors.timezone.message}
+                  </p>
+                )}
+              </div>
+            </div>
+          </fieldset>
 
           {errorMessage && (
-            <p className="text-sm text-red-600">
+            <div
+              role="alert"
+              className="mt-6 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+            >
               {errorMessage}
-            </p>
+            </div>
           )}
 
-          <div className="flex gap-3">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
-            >
-              {isSubmitting ? "Creating..." : "Create Store"}
-            </button>
-
-            <button
+          <div className="mt-8 flex flex-wrap items-center justify-end gap-3 border-t pt-6">
+            <Button
               type="button"
+              variant="outline"
               onClick={() => router.push("/dashboard")}
-              className="rounded-md border px-4 py-2"
+              className="h-11 px-5"
             >
               Cancel
-            </button>
+            </Button>
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-11 min-w-32 px-5"
+            >
+              {isSubmitting ? "Creating..." : "Create store"}
+            </Button>
           </div>
         </form>
       </div>
