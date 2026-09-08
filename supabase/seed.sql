@@ -1,4 +1,5 @@
--- Test merchants used for local development and RLS testing
+-- Test-only Auth users used as deterministic fixtures for local seed data
+-- and Row Level Security testing. These accounts are not intended for login.
 insert into auth.users (id, email, raw_user_meta_data)
 values
   (
