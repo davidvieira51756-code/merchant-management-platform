@@ -86,6 +86,13 @@ export default async function DashboardPage() {
                         storeId={store.id}
                         active={store.active}
                     />
+
+                    <a
+                        href={`/dashboard/stores/${store.id}/products`}
+                        className="text-sm font-medium underline"
+                      >
+                        Products
+                      </a>
                     </div>
                   </div>
                 </div>
