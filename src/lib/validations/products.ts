@@ -8,9 +8,20 @@ export const productSchema = z.object({
     .trim()
     .optional(),
 
-  price: z.coerce
-    .number()
-    .min(0, "Price cannot be negative"),
+  price: z.preprocess(
+    (value) => {
+      if (value === "" || value === null || value === undefined) {
+        return undefined;
+      }
+
+      return Number(value);
+    },
+    z
+      .number({
+        error: "Price is required",
+      })
+      .min(0, "Price cannot be negative")
+  ),
 
   available: z.boolean(),
 });

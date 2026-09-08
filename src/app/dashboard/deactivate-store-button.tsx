@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/client";
 
 type DeactivateStoreButtonProps = {
@@ -14,7 +15,8 @@ export default function DeactivateStoreButton({
   active,
 }: DeactivateStoreButtonProps) {
   const router = useRouter();
-  const supabase = createClient();
+
+  const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -23,17 +25,22 @@ export default function DeactivateStoreButton({
     setLoading(true);
     setErrorMessage(null);
 
-    const { error } = await supabase
+    const { data: updatedStore, error } = await supabase
       .from("stores")
       .update({ active: false })
-      .eq("id", storeId);
+      .eq("id", storeId)
+      .select("id")
+      .single();
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (error || !updatedStore) {
+      setErrorMessage(
+        error?.message ?? "Store could not be deactivated."
+      );
       setLoading(false);
       return;
     }
 
+    setLoading(false);
     router.refresh();
   }
 

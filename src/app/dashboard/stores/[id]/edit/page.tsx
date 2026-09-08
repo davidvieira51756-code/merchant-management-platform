@@ -73,7 +73,7 @@ export default function EditStorePage() {
   async function onSubmit(data: StoreFormValues) {
     setErrorMessage(null);
 
-    const { error } = await supabase
+    const { data: updatedStore, error } = await supabase
       .from("stores")
       .update({
         name: data.name,
@@ -84,10 +84,14 @@ export default function EditStorePage() {
         phone: data.phone,
         timezone: data.timezone,
       })
-      .eq("id", storeId);
+      .eq("id", storeId)
+      .select("id")
+      .single();
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (error || !updatedStore) {
+      setErrorMessage(
+        error?.message ?? "Store could not be updated."
+      );
       return;
     }
 
@@ -114,7 +118,10 @@ export default function EditStorePage() {
           className="mt-6 space-y-4"
         >
           <div>
-            <label htmlFor="name" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="name"
+              className="mb-1 block text-sm font-medium"
+            >
               Name
             </label>
 
@@ -132,7 +139,10 @@ export default function EditStorePage() {
           </div>
 
           <div>
-            <label htmlFor="street" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="street"
+              className="mb-1 block text-sm font-medium"
+            >
               Street
             </label>
 
@@ -150,7 +160,10 @@ export default function EditStorePage() {
           </div>
 
           <div>
-            <label htmlFor="city" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="city"
+              className="mb-1 block text-sm font-medium"
+            >
               City
             </label>
 
@@ -168,7 +181,10 @@ export default function EditStorePage() {
           </div>
 
           <div>
-            <label htmlFor="state" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="state"
+              className="mb-1 block text-sm font-medium"
+            >
               State
             </label>
 
@@ -186,7 +202,10 @@ export default function EditStorePage() {
           </div>
 
           <div>
-            <label htmlFor="zipCode" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="zipCode"
+              className="mb-1 block text-sm font-medium"
+            >
               Zip Code
             </label>
 
@@ -204,7 +223,10 @@ export default function EditStorePage() {
           </div>
 
           <div>
-            <label htmlFor="phone" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="phone"
+              className="mb-1 block text-sm font-medium"
+            >
               Phone
             </label>
 
@@ -222,7 +244,10 @@ export default function EditStorePage() {
           </div>
 
           <div>
-            <label htmlFor="timezone" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="timezone"
+              className="mb-1 block text-sm font-medium"
+            >
               Timezone
             </label>
 

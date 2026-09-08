@@ -70,7 +70,7 @@ export default function EditProductPage() {
   async function onSubmit(data: ProductFormValues) {
     setErrorMessage(null);
 
-    const { error } = await supabase
+    const { data: updatedProduct, error } = await supabase
       .from("products")
       .update({
         name: data.name,
@@ -79,10 +79,14 @@ export default function EditProductPage() {
         available: data.available,
       })
       .eq("id", productId)
-      .eq("store_id", storeId);
+      .eq("store_id", storeId)
+      .select("id")
+      .single();
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (error || !updatedProduct) {
+      setErrorMessage(
+        error?.message ?? "Product could not be updated."
+      );
       return;
     }
 
@@ -113,7 +117,10 @@ export default function EditProductPage() {
           className="mt-6 space-y-4"
         >
           <div>
-            <label htmlFor="name" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="name"
+              className="mb-1 block text-sm font-medium"
+            >
               Name
             </label>
 
@@ -153,7 +160,10 @@ export default function EditProductPage() {
           </div>
 
           <div>
-            <label htmlFor="price" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="price"
+              className="mb-1 block text-sm font-medium"
+            >
               Price
             </label>
 
@@ -179,7 +189,10 @@ export default function EditProductPage() {
               {...register("available")}
             />
 
-            <label htmlFor="available" className="text-sm font-medium">
+            <label
+              htmlFor="available"
+              className="text-sm font-medium"
+            >
               Available
             </label>
           </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+
 import { createClient } from "@/lib/supabase/client";
 
 type RemoveProductButtonProps = {
@@ -12,7 +13,8 @@ export default function RemoveProductButton({
   productId,
 }: RemoveProductButtonProps) {
   const router = useRouter();
-  const supabase = createClient();
+
+  const supabase = useMemo(() => createClient(), []);
 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -29,17 +31,22 @@ export default function RemoveProductButton({
     setLoading(true);
     setErrorMessage(null);
 
-    const { error } = await supabase
+    const { data: deletedProduct, error } = await supabase
       .from("products")
       .delete()
-      .eq("id", productId);
+      .eq("id", productId)
+      .select("id")
+      .single();
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (error || !deletedProduct) {
+      setErrorMessage(
+        error?.message ?? "Product could not be removed."
+      );
       setLoading(false);
       return;
     }
 
+    setLoading(false);
     router.refresh();
   }
 
