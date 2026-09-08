@@ -1,57 +1,95 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { createClient } from "@/lib/supabase/client";
+import {
+  authSchema,
+  AuthFormValues,
+} from "@/lib/validations/auth";
 
 export default function LoginPage() {
   const router = useRouter();
-  const supabase = createClient();
+
+  const supabase = useMemo(() => createClient(), []);
 
   const [isSignUp, setIsSignUp] = useState(false);
-  const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<AuthFormValues>({
+    resolver: zodResolver(authSchema),
+    defaultValues: {
+      mode: "login",
+      email: "",
+      password: "",
+    },
+  });
 
-    setError(null);
-    setLoading(true);
+  async function onSubmit(data: AuthFormValues) {
+    setErrorMessage(null);
 
-    if (isSignUp) {
+    if (data.mode === "signup") {
       const { error } = await supabase.auth.signUp({
-        email,
-        password,
+        email: data.email,
+        password: data.password,
         options: {
           data: {
-            full_name: fullName,
+            full_name: data.fullName,
           },
         },
       });
 
       if (error) {
-        setError(error.message);
-        setLoading(false);
+        setErrorMessage(error.message);
         return;
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+        email: data.email,
+        password: data.password,
       });
 
       if (error) {
-        setError(error.message);
-        setLoading(false);
+        setErrorMessage(error.message);
         return;
       }
     }
 
     router.push("/dashboard");
     router.refresh();
+  }
+
+  function toggleMode() {
+    const nextIsSignUp = !isSignUp;
+
+    setIsSignUp(nextIsSignUp);
+    setErrorMessage(null);
+
+    if (nextIsSignUp) {
+      reset({
+        mode: "signup",
+        fullName: "",
+        email: "",
+        password: "",
+      });
+    } else {
+      reset({
+        mode: "login",
+        email: "",
+        password: "",
+      });
+    }
+
+    setValue("mode", nextIsSignUp ? "signup" : "login");
   }
 
   return (
@@ -61,63 +99,96 @@ export default function LoginPage() {
           {isSignUp ? "Create account" : "Login"}
         </h1>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="space-y-4"
+        >
+          <input
+            type="hidden"
+            {...register("mode")}
+          />
+
           {isSignUp && (
             <div>
-              <label htmlFor="fullName" className="mb-1 block text-sm font-medium">
+              <label
+                htmlFor="fullName"
+                className="mb-1 block text-sm font-medium"
+              >
                 Full name
               </label>
 
               <input
                 id="fullName"
                 type="text"
-                value={fullName}
-                onChange={(event) => setFullName(event.target.value)}
-                required
+                {...register("fullName")}
                 className="w-full rounded-md border px-3 py-2"
               />
+
+              {errors.fullName && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.fullName.message}
+                </p>
+              )}
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="email"
+              className="mb-1 block text-sm font-medium"
+            >
               Email
             </label>
 
             <input
               id="email"
               type="email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
+              {...register("email")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.email && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.email.message}
+              </p>
+            )}
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="password"
+              className="mb-1 block text-sm font-medium"
+            >
               Password
             </label>
 
             <input
               id="password"
               type="password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              minLength={6}
+              {...register("password")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.password && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.password.message}
+              </p>
+            )}
           </div>
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {errorMessage && (
+            <p className="text-sm text-red-600">
+              {errorMessage}
+            </p>
+          )}
 
           <button
             type="submit"
-            disabled={loading}
+            disabled={isSubmitting}
             className="w-full rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
           >
-            {loading
+            {isSubmitting
               ? "Loading..."
               : isSignUp
                 ? "Create account"
@@ -127,10 +198,7 @@ export default function LoginPage() {
 
         <button
           type="button"
-          onClick={() => {
-            setIsSignUp((current) => !current);
-            setError(null);
-          }}
+          onClick={toggleMode}
           className="mt-4 w-full text-sm underline"
         >
           {isSignUp

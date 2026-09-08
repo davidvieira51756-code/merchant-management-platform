@@ -1,27 +1,44 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { createClient } from "@/lib/supabase/client";
+import {
+  storeSchema,
+  StoreFormValues,
+} from "@/lib/validations/store";
 
 export default function EditStorePage() {
   const router = useRouter();
   const params = useParams();
-  const supabase = createClient();
+
+  const supabase = useMemo(() => createClient(), []);
 
   const storeId = params.id as string;
 
-  const [name, setName] = useState("");
-  const [street, setStreet] = useState("");
-  const [city, setCity] = useState("");
-  const [state, setState] = useState("");
-  const [zipCode, setZipCode] = useState("");
-  const [phone, setPhone] = useState("");
-  const [timezone, setTimezone] = useState("");
-
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<StoreFormValues>({
+    resolver: zodResolver(storeSchema),
+    defaultValues: {
+      name: "",
+      street: "",
+      city: "",
+      state: "",
+      zipCode: "",
+      phone: "",
+      timezone: "",
+    },
+  });
 
   useEffect(() => {
     async function loadStore() {
@@ -37,42 +54,40 @@ export default function EditStorePage() {
         return;
       }
 
-      setName(data.name);
-      setStreet(data.street);
-      setCity(data.city);
-      setState(data.state);
-      setZipCode(data.zip_code);
-      setPhone(data.phone);
-      setTimezone(data.timezone);
+      reset({
+        name: data.name,
+        street: data.street,
+        city: data.city,
+        state: data.state,
+        zipCode: data.zip_code,
+        phone: data.phone,
+        timezone: data.timezone,
+      });
 
       setLoading(false);
     }
 
     loadStore();
-  }, [storeId, supabase]);
+  }, [storeId, supabase, reset]);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
+  async function onSubmit(data: StoreFormValues) {
     setErrorMessage(null);
-    setSaving(true);
 
     const { error } = await supabase
       .from("stores")
       .update({
-        name,
-        street,
-        city,
-        state,
-        zip_code: zipCode,
-        phone,
-        timezone,
+        name: data.name,
+        street: data.street,
+        city: data.city,
+        state: data.state,
+        zip_code: data.zipCode,
+        phone: data.phone,
+        timezone: data.timezone,
       })
       .eq("id", storeId);
 
     if (error) {
       setErrorMessage(error.message);
-      setSaving(false);
       return;
     }
 
@@ -93,109 +108,150 @@ export default function EditStorePage() {
       <div className="mx-auto max-w-xl">
         <h1 className="text-3xl font-semibold">Edit Store</h1>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="mt-6 space-y-4"
+        >
           <div>
             <label htmlFor="name" className="mb-1 block text-sm font-medium">
               Name
             </label>
+
             <input
               id="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
+              {...register("name")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="street" className="mb-1 block text-sm font-medium">
               Street
             </label>
+
             <input
               id="street"
-              value={street}
-              onChange={(event) => setStreet(event.target.value)}
-              required
+              {...register("street")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.street && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.street.message}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="city" className="mb-1 block text-sm font-medium">
               City
             </label>
+
             <input
               id="city"
-              value={city}
-              onChange={(event) => setCity(event.target.value)}
-              required
+              {...register("city")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.city && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.city.message}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="state" className="mb-1 block text-sm font-medium">
               State
             </label>
+
             <input
               id="state"
-              value={state}
-              onChange={(event) => setState(event.target.value)}
-              required
+              {...register("state")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.state && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.state.message}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="zipCode" className="mb-1 block text-sm font-medium">
               Zip Code
             </label>
+
             <input
               id="zipCode"
-              value={zipCode}
-              onChange={(event) => setZipCode(event.target.value)}
-              required
+              {...register("zipCode")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.zipCode && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.zipCode.message}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="phone" className="mb-1 block text-sm font-medium">
               Phone
             </label>
+
             <input
               id="phone"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              required
+              {...register("phone")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.phone && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.phone.message}
+              </p>
+            )}
           </div>
 
           <div>
             <label htmlFor="timezone" className="mb-1 block text-sm font-medium">
               Timezone
             </label>
+
             <input
               id="timezone"
-              value={timezone}
-              onChange={(event) => setTimezone(event.target.value)}
-              required
+              {...register("timezone")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.timezone && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.timezone.message}
+              </p>
+            )}
           </div>
 
           {errorMessage && (
-            <p className="text-sm text-red-600">{errorMessage}</p>
+            <p className="text-sm text-red-600">
+              {errorMessage}
+            </p>
           )}
 
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={saving}
+              disabled={isSubmitting}
               className="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save Changes"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </button>
 
             <button

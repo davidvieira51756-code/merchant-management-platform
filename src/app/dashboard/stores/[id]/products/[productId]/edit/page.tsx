@@ -1,25 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { createClient } from "@/lib/supabase/client";
+import {
+  productSchema,
+  ProductFormInput,
+  ProductFormValues,
+} from "@/lib/validations/products";
 
 export default function EditProductPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClient();
+
+  const supabase = useMemo(() => createClient(), []);
 
   const storeId = params.id as string;
   const productId = params.productId as string;
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [available, setAvailable] = useState(true);
-
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<ProductFormInput, unknown, ProductFormValues>({
+    resolver: zodResolver(productSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      available: true,
+    },
+  });
 
   useEffect(() => {
     async function loadProduct() {
@@ -36,45 +54,35 @@ export default function EditProductPage() {
         return;
       }
 
-      setName(data.name);
-      setDescription(data.description ?? "");
-      setPrice(String(data.price));
-      setAvailable(data.available);
+      reset({
+        name: data.name,
+        description: data.description ?? "",
+        price: Number(data.price),
+        available: data.available,
+      });
 
       setLoading(false);
     }
 
     loadProduct();
-  }, [productId, storeId, supabase]);
+  }, [productId, storeId, supabase, reset]);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    setSaving(true);
+  async function onSubmit(data: ProductFormValues) {
     setErrorMessage(null);
-
-    const numericPrice = Number(price);
-
-    if (Number.isNaN(numericPrice) || numericPrice < 0) {
-      setErrorMessage("Price must be a valid positive number.");
-      setSaving(false);
-      return;
-    }
 
     const { error } = await supabase
       .from("products")
       .update({
-        name,
-        description: description || null,
-        price: numericPrice,
-        available,
+        name: data.name,
+        description: data.description || null,
+        price: data.price,
+        available: data.available,
       })
       .eq("id", productId)
       .eq("store_id", storeId);
 
     if (error) {
       setErrorMessage(error.message);
-      setSaving(false);
       return;
     }
 
@@ -99,7 +107,11 @@ export default function EditProductPage() {
           Update product information.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="mt-6 space-y-4"
+        >
           <div>
             <label htmlFor="name" className="mb-1 block text-sm font-medium">
               Name
@@ -107,11 +119,15 @@ export default function EditProductPage() {
 
             <input
               id="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
+              {...register("name")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -124,11 +140,16 @@ export default function EditProductPage() {
 
             <textarea
               id="description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              {...register("description")}
               rows={4}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -139,21 +160,23 @@ export default function EditProductPage() {
             <input
               id="price"
               type="number"
-              min="0"
               step="0.01"
-              value={price}
-              onChange={(event) => setPrice(event.target.value)}
-              required
+              {...register("price")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.price && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.price.message}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <input
               id="available"
               type="checkbox"
-              checked={available}
-              onChange={(event) => setAvailable(event.target.checked)}
+              {...register("available")}
             />
 
             <label htmlFor="available" className="text-sm font-medium">
@@ -162,16 +185,18 @@ export default function EditProductPage() {
           </div>
 
           {errorMessage && (
-            <p className="text-sm text-red-600">{errorMessage}</p>
+            <p className="text-sm text-red-600">
+              {errorMessage}
+            </p>
           )}
 
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={saving}
+              disabled={isSubmitting}
               className="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
             >
-              {saving ? "Saving..." : "Save Changes"}
+              {isSubmitting ? "Saving..." : "Save Changes"}
             </button>
 
             <button

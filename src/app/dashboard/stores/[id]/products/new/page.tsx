@@ -1,49 +1,55 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { createClient } from "@/lib/supabase/client";
+import {
+  productSchema,
+  ProductFormInput,
+  ProductFormValues,
+} from "@/lib/validations/products";
 
 export default function NewProductPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClient();
+
+  const supabase = useMemo(() => createClient(), []);
 
   const storeId = params.id as string;
 
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [price, setPrice] = useState("");
-  const [available, setAvailable] = useState(true);
-
-  const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ProductFormInput, unknown, ProductFormValues>({
+    resolver: zodResolver(productSchema),
 
-    setLoading(true);
+    defaultValues: {
+      name: "",
+      description: "",
+      price: 0,
+      available: true,
+    },
+  });
+
+  async function onSubmit(data: ProductFormValues) {
     setErrorMessage(null);
-
-    const numericPrice = Number(price);
-
-    if (Number.isNaN(numericPrice) || numericPrice < 0) {
-      setErrorMessage("Price must be a valid positive number.");
-      setLoading(false);
-      return;
-    }
 
     const { error } = await supabase.from("products").insert({
       store_id: storeId,
-      name,
-      description: description || null,
-      price: numericPrice,
-      available,
+      name: data.name,
+      description: data.description || null,
+      price: data.price,
+      available: data.available,
     });
 
     if (error) {
       setErrorMessage(error.message);
-      setLoading(false);
       return;
     }
 
@@ -60,19 +66,30 @@ export default function NewProductPage() {
           Add a new product to this store.
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+          className="mt-6 space-y-4"
+        >
           <div>
-            <label htmlFor="name" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="name"
+              className="mb-1 block text-sm font-medium"
+            >
               Name
             </label>
 
             <input
               id="name"
-              value={name}
-              onChange={(event) => setName(event.target.value)}
-              required
+              {...register("name")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.name && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.name.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -85,54 +102,69 @@ export default function NewProductPage() {
 
             <textarea
               id="description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
-              className="w-full rounded-md border px-3 py-2"
+              {...register("description")}
               rows={4}
+              className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.description && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.description.message}
+              </p>
+            )}
           </div>
 
           <div>
-            <label htmlFor="price" className="mb-1 block text-sm font-medium">
+            <label
+              htmlFor="price"
+              className="mb-1 block text-sm font-medium"
+            >
               Price
             </label>
 
             <input
               id="price"
               type="number"
-              min="0"
               step="0.01"
-              value={price}
-              onChange={(event) => setPrice(event.target.value)}
-              required
+              {...register("price")}
               className="w-full rounded-md border px-3 py-2"
             />
+
+            {errors.price && (
+              <p className="mt-1 text-sm text-red-600">
+                {errors.price.message}
+              </p>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
             <input
               id="available"
               type="checkbox"
-              checked={available}
-              onChange={(event) => setAvailable(event.target.checked)}
+              {...register("available")}
             />
 
-            <label htmlFor="available" className="text-sm font-medium">
+            <label
+              htmlFor="available"
+              className="text-sm font-medium"
+            >
               Available
             </label>
           </div>
 
           {errorMessage && (
-            <p className="text-sm text-red-600">{errorMessage}</p>
+            <p className="text-sm text-red-600">
+              {errorMessage}
+            </p>
           )}
 
           <div className="flex gap-3">
             <button
               type="submit"
-              disabled={loading}
+              disabled={isSubmitting}
               className="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
             >
-              {loading ? "Adding..." : "Add Product"}
+              {isSubmitting ? "Adding..." : "Add Product"}
             </button>
 
             <button
