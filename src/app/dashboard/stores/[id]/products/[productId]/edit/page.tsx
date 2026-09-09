@@ -41,6 +41,7 @@ export default function EditProductPage() {
   } | null>(null);
   const loading = loadResult?.key !== recordKey;
   const loadError = loadResult?.error;
+  const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
@@ -48,7 +49,7 @@ export default function EditProductPage() {
     control,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ProductFormInput, unknown, ProductFormValues>({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -105,30 +106,37 @@ export default function EditProductPage() {
 
   async function onSubmit(data: ProductFormValues) {
     if (loading || loadError) return;
+    setIsPending(true);
     setErrorMessage(null);
 
-    const { data: updatedProduct, error } = await supabase
-      .from("products")
-      .update({
-        name: data.name,
-        description: data.description || null,
-        price: data.price,
-        available: data.available,
-      })
-      .eq("id", productId)
-      .eq("store_id", storeId)
-      .select("id")
-      .single();
+    try {
+      const { data: updatedProduct, error } = await supabase
+        .from("products")
+        .update({
+          name: data.name,
+          description: data.description || null,
+          price: data.price,
+          available: data.available,
+        })
+        .eq("id", productId)
+        .eq("store_id", storeId)
+        .select("id")
+        .single();
 
-    if (error || !updatedProduct) {
-      setErrorMessage(
-        error?.message ?? "Product could not be updated."
-      );
-      return;
+      if (error || !updatedProduct) {
+        setErrorMessage(
+          error?.message ?? "Product could not be updated."
+        );
+        return;
+      }
+
+      router.push(`/dashboard/stores/${storeId}/products`);
+      router.refresh();
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsPending(false);
     }
-
-    router.push(`/dashboard/stores/${storeId}/products`);
-    router.refresh();
   }
 
   return (
@@ -197,7 +205,7 @@ export default function EditProductPage() {
           <form
             onSubmit={handleSubmit(onSubmit)}
             noValidate
-            aria-busy={isSubmitting}
+            aria-busy={isPending}
             className="mt-8"
           >
             <fieldset className="min-w-0">
@@ -379,10 +387,10 @@ export default function EditProductPage() {
 
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isPending}
                 className="h-11 min-w-32 px-5"
               >
-                {isSubmitting ? "Saving..." : "Save changes"}
+                {isPending ? "Saving..." : "Save changes"}
               </Button>
             </div>
           </form>

@@ -32,23 +32,27 @@ export default function RemoveProductButton({
     setLoading(true);
     setErrorMessage(null);
 
-    const { data: deletedProduct, error } = await supabase
-      .from("products")
-      .delete()
-      .eq("id", productId)
-      .select("id")
-      .single();
+    try {
+      const { data: deletedProduct, error } = await supabase
+        .from("products")
+        .delete()
+        .eq("id", productId)
+        .select("id")
+        .single();
 
-    if (error || !deletedProduct) {
-      setErrorMessage(
-        error?.message ?? "Product could not be removed."
-      );
+      if (error || !deletedProduct) {
+        setErrorMessage(
+          error?.message ?? "Product could not be removed."
+        );
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    router.refresh();
   }
 
   return (

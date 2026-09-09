@@ -37,13 +37,14 @@ export default function EditStorePage() {
   } | null>(null);
   const loading = loadResult?.key !== recordKey;
   const loadError = loadResult?.error;
+  const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<StoreFormValues>({
     resolver: zodResolver(storeSchema),
     defaultValues: {
@@ -105,32 +106,39 @@ export default function EditStorePage() {
 
   async function onSubmit(data: StoreFormValues) {
     if (loading || loadError) return;
+    setIsPending(true);
     setErrorMessage(null);
 
-    const { data: updatedStore, error } = await supabase
-      .from("stores")
-      .update({
-        name: data.name,
-        street: data.street,
-        city: data.city,
-        state: data.state,
-        zip_code: data.zipCode,
-        phone: data.phone,
-        timezone: data.timezone,
-      })
-      .eq("id", storeId)
-      .select("id")
-      .single();
+    try {
+      const { data: updatedStore, error } = await supabase
+        .from("stores")
+        .update({
+          name: data.name,
+          street: data.street,
+          city: data.city,
+          state: data.state,
+          zip_code: data.zipCode,
+          phone: data.phone,
+          timezone: data.timezone,
+        })
+        .eq("id", storeId)
+        .select("id")
+        .single();
 
-    if (error || !updatedStore) {
-      setErrorMessage(
-        error?.message ?? "Store could not be updated."
-      );
-      return;
+      if (error || !updatedStore) {
+        setErrorMessage(
+          error?.message ?? "Store could not be updated."
+        );
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsPending(false);
     }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (
@@ -200,7 +208,7 @@ export default function EditStorePage() {
           <form
             onSubmit={handleSubmit(onSubmit)}
             noValidate
-            aria-busy={isSubmitting}
+            aria-busy={isPending}
             className="mt-8"
           >
             <fieldset className="min-w-0">
@@ -420,10 +428,10 @@ export default function EditStorePage() {
 
               <Button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isPending}
                 className="h-11 min-w-32 px-5"
               >
-                {isSubmitting ? "Saving..." : "Save changes"}
+                {isPending ? "Saving..." : "Save changes"}
               </Button>
             </div>
           </form>

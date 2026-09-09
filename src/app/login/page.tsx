@@ -27,6 +27,7 @@ export default function LoginPage() {
   const supabase = useMemo(() => createClient(), []);
 
   const [isSignUp, setIsSignUp] = useState(false);
+  const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
@@ -35,7 +36,7 @@ export default function LoginPage() {
     handleSubmit,
     setValue,
     reset,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<AuthFormValues>({
     resolver: zodResolver(authSchema),
     defaultValues: {
@@ -46,41 +47,48 @@ export default function LoginPage() {
   });
 
   async function onSubmit(data: AuthFormValues) {
+    setIsPending(true);
     setErrorMessage(null);
 
-    if (data.mode === "signup") {
-      const { data: signUpData, error } = await supabase.auth.signUp({
-        email: data.email,
-        password: data.password,
-        options: {
-          data: {
-            full_name: data.fullName,
+    try {
+      if (data.mode === "signup") {
+        const { data: signUpData, error } = await supabase.auth.signUp({
+          email: data.email,
+          password: data.password,
+          options: {
+            data: {
+              full_name: data.fullName,
+            },
           },
-        },
-      });
+        });
 
-      if (error) {
-        setErrorMessage(error.message);
-        return;
-      }
-      if (!signUpData.session) {
-        setConfirmationEmail(data.email);
-        return;
-      }
-    } else {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
+        if (error) {
+          setErrorMessage(error.message);
+          return;
+        }
+        if (!signUpData.session) {
+          setConfirmationEmail(data.email);
+          return;
+        }
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: data.email,
+          password: data.password,
+        });
 
-      if (error) {
-        setErrorMessage(error.message);
-        return;
+        if (error) {
+          setErrorMessage(error.message);
+          return;
+        }
       }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsPending(false);
     }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   function toggleMode() {
@@ -161,7 +169,7 @@ export default function LoginPage() {
           <form
             onSubmit={handleSubmit(onSubmit)}
             noValidate
-            aria-busy={isSubmitting}
+            aria-busy={isPending}
             className="mt-8 space-y-5"
           >
             <input type="hidden" {...register("mode")} />
@@ -257,10 +265,10 @@ export default function LoginPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isPending}
               className="h-11 w-full"
             >
-              {isSubmitting
+              {isPending
                 ? isSignUp
                   ? "Creating account..."
                   : "Logging in..."
@@ -282,7 +290,7 @@ export default function LoginPage() {
             type="button"
             variant="link"
             onClick={toggleMode}
-            disabled={isSubmitting}
+            disabled={isPending}
             className="mt-1 h-10 px-3"
           >
             {isSignUp ? "Log in" : "Create an account"}

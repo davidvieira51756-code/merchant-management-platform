@@ -33,13 +33,14 @@ export default function NewProductPage() {
 
   const storeId = params.id as string;
 
+  const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
     control,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<ProductFormInput, unknown, ProductFormValues>({
     resolver: zodResolver(productSchema),
 
@@ -52,27 +53,34 @@ export default function NewProductPage() {
   });
 
   async function onSubmit(data: ProductFormValues) {
+    setIsPending(true);
     setErrorMessage(null);
 
-    const { data: createdProduct, error } = await supabase
-      .from("products")
-      .insert({
-        store_id: storeId,
-        name: data.name,
-        description: data.description || null,
-        price: data.price,
-        available: data.available,
-      })
-      .select("id")
-      .single();
+    try {
+      const { data: createdProduct, error } = await supabase
+        .from("products")
+        .insert({
+          store_id: storeId,
+          name: data.name,
+          description: data.description || null,
+          price: data.price,
+          available: data.available,
+        })
+        .select("id")
+        .single();
 
-    if (error || !createdProduct) {
-      setErrorMessage(error?.message ?? "Product could not be created.");
-      return;
+      if (error || !createdProduct) {
+        setErrorMessage(error?.message ?? "Product could not be created.");
+        return;
+      }
+
+      router.push(`/dashboard/stores/${storeId}/products`);
+      router.refresh();
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsPending(false);
     }
-
-    router.push(`/dashboard/stores/${storeId}/products`);
-    router.refresh();
   }
 
   return (
@@ -99,7 +107,7 @@ export default function NewProductPage() {
         <form
           onSubmit={handleSubmit(onSubmit)}
           noValidate
-          aria-busy={isSubmitting}
+          aria-busy={isPending}
           className="mt-8"
         >
           <fieldset className="min-w-0">
@@ -270,10 +278,10 @@ export default function NewProductPage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isPending}
               className="h-11 min-w-32 px-5"
             >
-              {isSubmitting ? "Adding..." : "Add product"}
+              {isPending ? "Adding..." : "Add product"}
             </Button>
           </div>
         </form>

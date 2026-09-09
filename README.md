@@ -84,6 +84,12 @@ npx supabase db reset
 - The email confirmation Route Handler verifies a Supabase token hash before creating a session.
 - Create, update, deactivate, and delete operations verify that an affected row is returned before reporting success.
 
+## Scalability
+
+The current dashboard loads complete store and product lists, which is appropriate for the scope of this challenge.
+
+The database already includes indexes on store ownership and product relationships. If the amount of data grows, the main next step would be adding pagination to store and product queries so the application does not load large result sets at once.
+
 ## Notes
 
 - Seeded Auth users are local fixtures for RLS testing, not login accounts.

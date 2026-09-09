@@ -26,23 +26,27 @@ export default function DeactivateStoreButton({
     setLoading(true);
     setErrorMessage(null);
 
-    const { data: updatedStore, error } = await supabase
-      .from("stores")
-      .update({ active: false })
-      .eq("id", storeId)
-      .select("id")
-      .single();
+    try {
+      const { data: updatedStore, error } = await supabase
+        .from("stores")
+        .update({ active: false })
+        .eq("id", storeId)
+        .select("id")
+        .single();
 
-    if (error || !updatedStore) {
-      setErrorMessage(
-        error?.message ?? "Store could not be deactivated."
-      );
+      if (error || !updatedStore) {
+        setErrorMessage(
+          error?.message ?? "Store could not be deactivated."
+        );
+        return;
+      }
+
+      router.refresh();
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setLoading(false);
-    router.refresh();
   }
 
   if (!active) {

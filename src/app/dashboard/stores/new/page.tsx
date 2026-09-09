@@ -27,12 +27,13 @@ export default function NewStorePage() {
 
   const supabase = useMemo(() => createClient(), []);
 
+  const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
     handleSubmit,
-    formState: { errors, isSubmitting },
+    formState: { errors },
   } = useForm<StoreFormValues>({
     resolver: zodResolver(storeSchema),
     defaultValues: {
@@ -47,41 +48,48 @@ export default function NewStorePage() {
   });
 
   async function onSubmit(data: StoreFormValues) {
+    setIsPending(true);
     setErrorMessage(null);
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      setErrorMessage("You must be logged in to create a store.");
-      return;
+      if (userError || !user) {
+        setErrorMessage("You must be logged in to create a store.");
+        return;
+      }
+
+      const { data: createdStore, error } = await supabase
+        .from("stores")
+        .insert({
+          merchant_id: user.id,
+          name: data.name,
+          street: data.street,
+          city: data.city,
+          state: data.state,
+          zip_code: data.zipCode,
+          phone: data.phone,
+          timezone: data.timezone,
+          active: true,
+        })
+        .select("id")
+        .single();
+
+      if (error || !createdStore) {
+        setErrorMessage(error?.message ?? "Store could not be created.");
+        return;
+      }
+
+      router.push("/dashboard");
+      router.refresh();
+    } catch {
+      setErrorMessage("Something went wrong. Please try again.");
+    } finally {
+      setIsPending(false);
     }
-
-    const { data: createdStore, error } = await supabase
-      .from("stores")
-      .insert({
-        merchant_id: user.id,
-        name: data.name,
-        street: data.street,
-        city: data.city,
-        state: data.state,
-        zip_code: data.zipCode,
-        phone: data.phone,
-        timezone: data.timezone,
-        active: true,
-      })
-      .select("id")
-      .single();
-
-    if (error || !createdStore) {
-      setErrorMessage(error?.message ?? "Store could not be created.");
-      return;
-    }
-
-    router.push("/dashboard");
-    router.refresh();
   }
 
   return (
@@ -108,7 +116,7 @@ export default function NewStorePage() {
         <form
           onSubmit={handleSubmit(onSubmit)}
           noValidate
-          aria-busy={isSubmitting}
+          aria-busy={isPending}
           className="mt-8"
         >
           <fieldset className="min-w-0">
@@ -320,10 +328,10 @@ export default function NewStorePage() {
 
             <Button
               type="submit"
-              disabled={isSubmitting}
+              disabled={isPending}
               className="h-11 min-w-32 px-5"
             >
-              {isSubmitting ? "Creating..." : "Create store"}
+              {isPending ? "Creating..." : "Create store"}
             </Button>
           </div>
         </form>
