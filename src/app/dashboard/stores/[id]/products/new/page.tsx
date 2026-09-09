@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -33,6 +33,7 @@ export default function NewProductPage() {
 
   const storeId = params.id as string;
 
+  const submissionGuardRef = useRef(false);
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -53,6 +54,12 @@ export default function NewProductPage() {
   });
 
   async function onSubmit(data: ProductFormValues) {
+    if (submissionGuardRef.current) {
+      return;
+    }
+
+    submissionGuardRef.current = true;
+    let navigationStarted = false;
     setIsPending(true);
     setErrorMessage(null);
 
@@ -75,11 +82,14 @@ export default function NewProductPage() {
       }
 
       router.push(`/dashboard/stores/${storeId}/products`);
-      router.refresh();
+      navigationStarted = true;
     } catch {
       setErrorMessage("Something went wrong. Please try again.");
     } finally {
-      setIsPending(false);
+      if (!navigationStarted) {
+        submissionGuardRef.current = false;
+        setIsPending(false);
+      }
     }
   }
 
@@ -105,7 +115,9 @@ export default function NewProductPage() {
         </header>
 
         <form
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={(event) => {
+            void handleSubmit(onSubmit)(event);
+          }}
           noValidate
           aria-busy={isPending}
           className="mt-8"

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -9,11 +9,14 @@ import { createClient } from "@/lib/supabase/client";
 export default function LogoutButton() {
   const router = useRouter();
   const supabase = createClient();
+  const submissionGuardRef = useRef(false);
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleLogout() {
-    if (isPending) return;
+    if (submissionGuardRef.current) return;
+    submissionGuardRef.current = true;
+    let navigationStarted = false;
     setIsPending(true);
     setErrorMessage(null);
     try {
@@ -23,11 +26,14 @@ export default function LogoutButton() {
         return;
       }
       router.push("/login");
-      router.refresh();
+      navigationStarted = true;
     } catch {
       setErrorMessage("Unable to log out. Please try again.");
     } finally {
-      setIsPending(false);
+      if (!navigationStarted) {
+        submissionGuardRef.current = false;
+        setIsPending(false);
+      }
     }
   }
 

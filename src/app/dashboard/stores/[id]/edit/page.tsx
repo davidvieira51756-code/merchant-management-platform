@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,6 +37,7 @@ export default function EditStorePage() {
   } | null>(null);
   const loading = loadResult?.key !== recordKey;
   const loadError = loadResult?.error;
+  const submissionGuardRef = useRef(false);
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -106,6 +107,9 @@ export default function EditStorePage() {
 
   async function onSubmit(data: StoreFormValues) {
     if (loading || loadError) return;
+    if (submissionGuardRef.current) return;
+    submissionGuardRef.current = true;
+    let navigationStarted = false;
     setIsPending(true);
     setErrorMessage(null);
 
@@ -133,11 +137,14 @@ export default function EditStorePage() {
       }
 
       router.push("/dashboard");
-      router.refresh();
+      navigationStarted = true;
     } catch {
       setErrorMessage("Something went wrong. Please try again.");
     } finally {
-      setIsPending(false);
+      if (!navigationStarted) {
+        submissionGuardRef.current = false;
+        setIsPending(false);
+      }
     }
   }
 
@@ -206,7 +213,9 @@ export default function EditStorePage() {
           </div>
         ) : (
           <form
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={(event) => {
+              void handleSubmit(onSubmit)(event);
+            }}
             noValidate
             aria-busy={isPending}
             className="mt-8"

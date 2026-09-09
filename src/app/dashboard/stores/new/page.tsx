@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -27,6 +27,7 @@ export default function NewStorePage() {
 
   const supabase = useMemo(() => createClient(), []);
 
+  const submissionGuardRef = useRef(false);
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -48,6 +49,12 @@ export default function NewStorePage() {
   });
 
   async function onSubmit(data: StoreFormValues) {
+    if (submissionGuardRef.current) {
+      return;
+    }
+
+    submissionGuardRef.current = true;
+    let submissionSucceeded = false;
     setIsPending(true);
     setErrorMessage(null);
 
@@ -84,11 +91,14 @@ export default function NewStorePage() {
       }
 
       router.push("/dashboard");
-      router.refresh();
+      submissionSucceeded = true;
     } catch {
       setErrorMessage("Something went wrong. Please try again.");
     } finally {
-      setIsPending(false);
+      if (!submissionSucceeded) {
+        submissionGuardRef.current = false;
+        setIsPending(false);
+      }
     }
   }
 
@@ -114,7 +124,9 @@ export default function NewStorePage() {
         </header>
 
         <form
-          onSubmit={handleSubmit(onSubmit)}
+          onSubmit={(event) => {
+            void handleSubmit(onSubmit)(event);
+          }}
           noValidate
           aria-busy={isPending}
           className="mt-8"

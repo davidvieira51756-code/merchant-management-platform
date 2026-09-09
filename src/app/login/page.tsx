@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -26,6 +26,7 @@ export default function LoginPage() {
 
   const supabase = useMemo(() => createClient(), []);
 
+  const submissionGuardRef = useRef(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -47,6 +48,12 @@ export default function LoginPage() {
   });
 
   async function onSubmit(data: AuthFormValues) {
+    if (submissionGuardRef.current) {
+      return;
+    }
+
+    submissionGuardRef.current = true;
+    let navigationStarted = false;
     setIsPending(true);
     setErrorMessage(null);
 
@@ -83,11 +90,14 @@ export default function LoginPage() {
       }
 
       router.push("/dashboard");
-      router.refresh();
+      navigationStarted = true;
     } catch {
       setErrorMessage("Something went wrong. Please try again.");
     } finally {
-      setIsPending(false);
+      if (!navigationStarted) {
+        submissionGuardRef.current = false;
+        setIsPending(false);
+      }
     }
   }
 
@@ -167,7 +177,9 @@ export default function LoginPage() {
           </div>
         ) : (
           <form
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={(event) => {
+              void handleSubmit(onSubmit)(event);
+            }}
             noValidate
             aria-busy={isPending}
             className="mt-8 space-y-5"
