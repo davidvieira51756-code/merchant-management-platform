@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import {
   storeSchema,
@@ -28,7 +30,13 @@ export default function EditStorePage() {
 
   const storeId = params.id as string;
 
-  const [loading, setLoading] = useState(true);
+  const recordKey = storeId;
+  const [loadResult, setLoadResult] = useState<{
+    key: string;
+    error: string | null;
+  } | null>(null);
+  const loading = loadResult?.key !== recordKey;
+  const loadError = loadResult?.error;
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
@@ -50,36 +58,53 @@ export default function EditStorePage() {
   });
 
   useEffect(() => {
+    let cancelled = false;
     async function loadStore() {
-      const { data, error } = await supabase
-        .from("stores")
-        .select("*")
-        .eq("id", storeId)
-        .single();
+      try {
+        const { data, error } = await supabase
+          .from("stores")
+          .select("*")
+          .eq("id", storeId)
+          .maybeSingle();
 
-      if (error || !data) {
-        setErrorMessage("Store not found.");
-        setLoading(false);
-        return;
+        if (cancelled) return;
+        if (error || !data) {
+          setLoadResult({
+            key: recordKey,
+            error: error && error.code !== "22P02"
+              ? "Unable to load store. Please refresh the page to try again."
+              : "Store not found or you do not have access.",
+          });
+          return;
+        }
+
+        reset({
+          name: data.name,
+          street: data.street,
+          city: data.city,
+          state: data.state,
+          zipCode: data.zip_code,
+          phone: data.phone,
+          timezone: data.timezone,
+        });
+        setErrorMessage(null);
+        setLoadResult({ key: recordKey, error: null });
+      } catch {
+        if (!cancelled) {
+          setLoadResult({
+            key: recordKey,
+            error: "Unable to load store. Please refresh the page to try again.",
+          });
+        }
       }
-
-      reset({
-        name: data.name,
-        street: data.street,
-        city: data.city,
-        state: data.state,
-        zipCode: data.zip_code,
-        phone: data.phone,
-        timezone: data.timezone,
-      });
-
-      setLoading(false);
     }
 
     loadStore();
-  }, [storeId, supabase, reset]);
+    return () => { cancelled = true; };
+  }, [storeId, recordKey, supabase, reset]);
 
   async function onSubmit(data: StoreFormValues) {
+    if (loading || loadError) return;
     setErrorMessage(null);
 
     const { data: updatedStore, error } = await supabase
@@ -167,6 +192,10 @@ export default function EditStorePage() {
               </div>
             </div>
           </div>
+        ) : loadError ? (
+          <div role="alert" className="mt-8 rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+            {loadError}
+          </div>
         ) : (
           <form
             onSubmit={handleSubmit(onSubmit)}
@@ -181,11 +210,11 @@ export default function EditStorePage() {
 
               <div className="mt-5 grid gap-5 sm:grid-cols-2 sm:gap-6">
                 <div>
-                  <label htmlFor="name" className={labelClassName}>
+                  <Label htmlFor="name" className={labelClassName}>
                     Store name
-                  </label>
+                  </Label>
 
-                  <input
+                  <Input
                     id="name"
                     autoComplete="organization"
                     placeholder="e.g. Braga Central"
@@ -205,11 +234,11 @@ export default function EditStorePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="phone" className={labelClassName}>
+                  <Label htmlFor="phone" className={labelClassName}>
                     Phone
-                  </label>
+                  </Label>
 
-                  <input
+                  <Input
                     id="phone"
                     type="tel"
                     autoComplete="tel"
@@ -240,11 +269,11 @@ export default function EditStorePage() {
 
               <div className="mt-5 grid gap-5 sm:grid-cols-2 sm:gap-6">
                 <div className="sm:col-span-2">
-                  <label htmlFor="street" className={labelClassName}>
+                  <Label htmlFor="street" className={labelClassName}>
                     Street address
-                  </label>
+                  </Label>
 
-                  <input
+                  <Input
                     id="street"
                     autoComplete="address-line1"
                     placeholder="Street name and number"
@@ -264,11 +293,11 @@ export default function EditStorePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="city" className={labelClassName}>
+                  <Label htmlFor="city" className={labelClassName}>
                     City
-                  </label>
+                  </Label>
 
-                  <input
+                  <Input
                     id="city"
                     autoComplete="address-level2"
                     placeholder="e.g. Braga"
@@ -288,11 +317,11 @@ export default function EditStorePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="state" className={labelClassName}>
+                  <Label htmlFor="state" className={labelClassName}>
                     State / Region
-                  </label>
+                  </Label>
 
-                  <input
+                  <Input
                     id="state"
                     autoComplete="address-level1"
                     placeholder="e.g. Braga"
@@ -312,11 +341,11 @@ export default function EditStorePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="zipCode" className={labelClassName}>
+                  <Label htmlFor="zipCode" className={labelClassName}>
                     Postal code
-                  </label>
+                  </Label>
 
-                  <input
+                  <Input
                     id="zipCode"
                     autoComplete="postal-code"
                     placeholder="e.g. 4700-001"
@@ -336,11 +365,11 @@ export default function EditStorePage() {
                 </div>
 
                 <div>
-                  <label htmlFor="timezone" className={labelClassName}>
+                  <Label htmlFor="timezone" className={labelClassName}>
                     Timezone
-                  </label>
+                  </Label>
 
-                  <input
+                  <Input
                     id="timezone"
                     spellCheck={false}
                     autoCapitalize="none"

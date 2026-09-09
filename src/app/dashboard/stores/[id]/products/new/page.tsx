@@ -3,10 +3,14 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { createClient } from "@/lib/supabase/client";
 import {
   productSchema,
@@ -33,6 +37,7 @@ export default function NewProductPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<ProductFormInput, unknown, ProductFormValues>({
@@ -49,16 +54,20 @@ export default function NewProductPage() {
   async function onSubmit(data: ProductFormValues) {
     setErrorMessage(null);
 
-    const { error } = await supabase.from("products").insert({
-      store_id: storeId,
-      name: data.name,
-      description: data.description || null,
-      price: data.price,
-      available: data.available,
-    });
+    const { data: createdProduct, error } = await supabase
+      .from("products")
+      .insert({
+        store_id: storeId,
+        name: data.name,
+        description: data.description || null,
+        price: data.price,
+        available: data.available,
+      })
+      .select("id")
+      .single();
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (error || !createdProduct) {
+      setErrorMessage(error?.message ?? "Product could not be created.");
       return;
     }
 
@@ -100,11 +109,11 @@ export default function NewProductPage() {
 
             <div className="mt-5 space-y-5">
               <div>
-                <label htmlFor="name" className={labelClassName}>
+                <Label htmlFor="name" className={labelClassName}>
                   Product name
-                </label>
+                </Label>
 
-                <input
+                <Input
                   id="name"
                   placeholder="e.g. Cotton tote bag"
                   {...register("name")}
@@ -123,11 +132,11 @@ export default function NewProductPage() {
               </div>
 
               <div>
-                <label htmlFor="description" className={labelClassName}>
+                <Label htmlFor="description" className={labelClassName}>
                   Description
-                </label>
+                </Label>
 
-                <textarea
+                <Textarea
                   id="description"
                   rows={4}
                   placeholder="Describe the product and its main features."
@@ -157,9 +166,9 @@ export default function NewProductPage() {
 
             <div className="mt-5 grid gap-6 sm:grid-cols-2 sm:gap-8">
               <div>
-                <label htmlFor="price" className={labelClassName}>
+                <Label htmlFor="price" className={labelClassName}>
                   Price (EUR)
-                </label>
+                </Label>
 
                 <div className="relative">
                   <span
@@ -169,7 +178,7 @@ export default function NewProductPage() {
                     €
                   </span>
 
-                  <input
+                  <Input
                     id="price"
                     type="number"
                     step="0.01"
@@ -191,27 +200,36 @@ export default function NewProductPage() {
               </div>
 
               <div className="sm:pt-7">
-                <label
+                <Label
                   htmlFor="available"
                   className="flex min-h-11 cursor-pointer items-start gap-3 py-2"
                 >
-                  <input
-                    id="available"
-                    type="checkbox"
-                    {...register("available")}
-                    aria-invalid={Boolean(errors.available)}
-                    aria-describedby={
-                      errors.available
-                        ? "available-hint available-error"
-                        : "available-hint"
-                    }
-                    className="mt-0.5 size-4 shrink-0 cursor-pointer accent-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                  <Controller
+                    name="available"
+                    control={control}
+                    render={({ field }) => (
+                      <Checkbox
+                        id="available"
+                        name={field.name}
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        onBlur={field.onBlur}
+                        inputRef={field.ref}
+                        aria-invalid={Boolean(errors.available)}
+                        aria-describedby={
+                          errors.available
+                            ? "available-hint available-error"
+                            : "available-hint"
+                        }
+                        className="mt-0.5 size-4 shrink-0 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                      />
+                    )}
                   />
 
                   <span className="text-sm font-medium">
                     Available
                   </span>
-                </label>
+                </Label>
 
                 <p
                   id="available-hint"

@@ -10,7 +10,7 @@ export const productSchema = z.object({
 
   price: z.preprocess(
     (value) => {
-      if (value === "" || value === null || value === undefined) {
+      if ((typeof value === "string" && value.trim() === "") || value === null || value === undefined) {
         return undefined;
       }
 
@@ -21,6 +21,8 @@ export const productSchema = z.object({
         error: "Price is required",
       })
       .min(0, "Price cannot be negative")
+      .max(99999999.99, "Price cannot exceed 99999999.99")
+      .multipleOf(0.01, "Price must have at most 2 decimal places")
   ),
 
   available: z.boolean(),

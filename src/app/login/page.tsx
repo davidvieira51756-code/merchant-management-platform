@@ -6,6 +6,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import {
   authSchema,
@@ -26,6 +28,7 @@ export default function LoginPage() {
 
   const [isSignUp, setIsSignUp] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [confirmationEmail, setConfirmationEmail] = useState<string | null>(null);
 
   const {
     register,
@@ -46,7 +49,7 @@ export default function LoginPage() {
     setErrorMessage(null);
 
     if (data.mode === "signup") {
-      const { error } = await supabase.auth.signUp({
+      const { data: signUpData, error } = await supabase.auth.signUp({
         email: data.email,
         password: data.password,
         options: {
@@ -58,6 +61,10 @@ export default function LoginPage() {
 
       if (error) {
         setErrorMessage(error.message);
+        return;
+      }
+      if (!signUpData.session) {
+        setConfirmationEmail(data.email);
         return;
       }
     } else {
@@ -81,6 +88,7 @@ export default function LoginPage() {
 
     setIsSignUp(nextIsSignUp);
     setErrorMessage(null);
+    setConfirmationEmail(null);
 
     if (nextIsSignUp) {
       reset({
@@ -142,117 +150,126 @@ export default function LoginPage() {
           </p>
         </header>
 
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          noValidate
-          aria-busy={isSubmitting}
-          className="mt-8 space-y-5"
-        >
-          <input type="hidden" {...register("mode")} />
+        {confirmationEmail ? (
+          <div role="status" className="mt-8 rounded-lg border bg-card px-4 py-5 text-center">
+            <h2 className="text-lg font-semibold">Check your email</h2>
+            <p className="mt-2 break-words text-sm leading-6 text-muted-foreground">
+              Check {confirmationEmail} for a confirmation link to finish creating your account.
+            </p>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            noValidate
+            aria-busy={isSubmitting}
+            className="mt-8 space-y-5"
+          >
+            <input type="hidden" {...register("mode")} />
 
-          {isSignUp && (
+            {isSignUp && (
+              <div>
+                <Label htmlFor="fullName" className={labelClassName}>
+                  Full name
+                </Label>
+
+                <Input
+                  id="fullName"
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Your full name"
+                  {...register("fullName")}
+                  aria-invalid={Boolean(errors.fullName)}
+                  aria-describedby={
+                    errors.fullName ? "fullName-error" : undefined
+                  }
+                  className={inputClassName}
+                />
+
+                {errors.fullName && (
+                  <p id="fullName-error" className={errorClassName}>
+                    {errors.fullName.message}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div>
-              <label htmlFor="fullName" className={labelClassName}>
-                Full name
-              </label>
+              <Label htmlFor="email" className={labelClassName}>
+                Email
+              </Label>
 
-              <input
-                id="fullName"
-                type="text"
-                autoComplete="name"
-                placeholder="Your full name"
-                {...register("fullName")}
-                aria-invalid={Boolean(errors.fullName)}
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck={false}
+                placeholder="you@example.com"
+                {...register("email")}
+                aria-invalid={Boolean(errors.email)}
                 aria-describedby={
-                  errors.fullName ? "fullName-error" : undefined
+                  errors.email ? "email-error" : undefined
                 }
                 className={inputClassName}
               />
 
-              {errors.fullName && (
-                <p id="fullName-error" className={errorClassName}>
-                  {errors.fullName.message}
+              {errors.email && (
+                <p id="email-error" className={errorClassName}>
+                  {errors.email.message}
                 </p>
               )}
             </div>
-          )}
 
-          <div>
-            <label htmlFor="email" className={labelClassName}>
-              Email
-            </label>
+            <div>
+              <Label htmlFor="password" className={labelClassName}>
+                Password
+              </Label>
 
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              autoCapitalize="none"
-              spellCheck={false}
-              placeholder="you@example.com"
-              {...register("email")}
-              aria-invalid={Boolean(errors.email)}
-              aria-describedby={
-                errors.email ? "email-error" : undefined
-              }
-              className={inputClassName}
-            />
+              <Input
+                id="password"
+                type="password"
+                autoComplete={
+                  isSignUp ? "new-password" : "current-password"
+                }
+                {...register("password")}
+                aria-invalid={Boolean(errors.password)}
+                aria-describedby={
+                  errors.password ? "password-error" : undefined
+                }
+                className={inputClassName}
+              />
 
-            {errors.email && (
-              <p id="email-error" className={errorClassName}>
-                {errors.email.message}
-              </p>
-            )}
-          </div>
-
-          <div>
-            <label htmlFor="password" className={labelClassName}>
-              Password
-            </label>
-
-            <input
-              id="password"
-              type="password"
-              autoComplete={
-                isSignUp ? "new-password" : "current-password"
-              }
-              {...register("password")}
-              aria-invalid={Boolean(errors.password)}
-              aria-describedby={
-                errors.password ? "password-error" : undefined
-              }
-              className={inputClassName}
-            />
-
-            {errors.password && (
-              <p id="password-error" className={errorClassName}>
-                {errors.password.message}
-              </p>
-            )}
-          </div>
-
-          {errorMessage && (
-            <div
-              role="alert"
-              className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive"
-            >
-              {errorMessage}
+              {errors.password && (
+                <p id="password-error" className={errorClassName}>
+                  {errors.password.message}
+                </p>
+              )}
             </div>
-          )}
 
-          <Button
-            type="submit"
-            disabled={isSubmitting}
-            className="h-11 w-full"
-          >
-            {isSubmitting
-              ? isSignUp
-                ? "Creating account..."
-                : "Logging in..."
-              : isSignUp
-                ? "Create account"
-                : "Log in"}
-          </Button>
-        </form>
+            {errorMessage && (
+              <div
+                role="alert"
+                className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+              >
+                {errorMessage}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="h-11 w-full"
+            >
+              {isSubmitting
+                ? isSignUp
+                  ? "Creating account..."
+                  : "Logging in..."
+                : isSignUp
+                  ? "Create account"
+                  : "Log in"}
+            </Button>
+          </form>
+        )}
 
         <div className="mt-8 border-t pt-6 text-center">
           <p className="text-sm text-muted-foreground">
@@ -265,6 +282,7 @@ export default function LoginPage() {
             type="button"
             variant="link"
             onClick={toggleMode}
+            disabled={isSubmitting}
             className="mt-1 h-10 px-3"
           >
             {isSignUp ? "Log in" : "Create an account"}

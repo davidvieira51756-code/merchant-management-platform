@@ -7,6 +7,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import {
   storeSchema,
@@ -57,20 +59,24 @@ export default function NewStorePage() {
       return;
     }
 
-    const { error } = await supabase.from("stores").insert({
-      merchant_id: user.id,
-      name: data.name,
-      street: data.street,
-      city: data.city,
-      state: data.state,
-      zip_code: data.zipCode,
-      phone: data.phone,
-      timezone: data.timezone,
-      active: true,
-    });
+    const { data: createdStore, error } = await supabase
+      .from("stores")
+      .insert({
+        merchant_id: user.id,
+        name: data.name,
+        street: data.street,
+        city: data.city,
+        state: data.state,
+        zip_code: data.zipCode,
+        phone: data.phone,
+        timezone: data.timezone,
+        active: true,
+      })
+      .select("id")
+      .single();
 
-    if (error) {
-      setErrorMessage(error.message);
+    if (error || !createdStore) {
+      setErrorMessage(error?.message ?? "Store could not be created.");
       return;
     }
 
@@ -112,11 +118,11 @@ export default function NewStorePage() {
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2 sm:gap-6">
               <div>
-                <label htmlFor="name" className={labelClassName}>
+                <Label htmlFor="name" className={labelClassName}>
                   Store name
-                </label>
+                </Label>
 
-                <input
+                <Input
                   id="name"
                   autoComplete="organization"
                   placeholder="e.g. Braga Central"
@@ -134,11 +140,11 @@ export default function NewStorePage() {
               </div>
 
               <div>
-                <label htmlFor="phone" className={labelClassName}>
+                <Label htmlFor="phone" className={labelClassName}>
                   Phone
-                </label>
+                </Label>
 
-                <input
+                <Input
                   id="phone"
                   type="tel"
                   autoComplete="tel"
@@ -167,11 +173,11 @@ export default function NewStorePage() {
 
             <div className="mt-5 grid gap-5 sm:grid-cols-2 sm:gap-6">
               <div className="sm:col-span-2">
-                <label htmlFor="street" className={labelClassName}>
+                <Label htmlFor="street" className={labelClassName}>
                   Street address
-                </label>
+                </Label>
 
-                <input
+                <Input
                   id="street"
                   autoComplete="address-line1"
                   placeholder="Street name and number"
@@ -191,11 +197,11 @@ export default function NewStorePage() {
               </div>
 
               <div>
-                <label htmlFor="city" className={labelClassName}>
+                <Label htmlFor="city" className={labelClassName}>
                   City
-                </label>
+                </Label>
 
-                <input
+                <Input
                   id="city"
                   autoComplete="address-level2"
                   placeholder="e.g. Braga"
@@ -213,11 +219,11 @@ export default function NewStorePage() {
               </div>
 
               <div>
-                <label htmlFor="state" className={labelClassName}>
+                <Label htmlFor="state" className={labelClassName}>
                   State / Region
-                </label>
+                </Label>
 
-                <input
+                <Input
                   id="state"
                   autoComplete="address-level1"
                   placeholder="e.g. Braga"
@@ -235,11 +241,11 @@ export default function NewStorePage() {
               </div>
 
               <div>
-                <label htmlFor="zipCode" className={labelClassName}>
+                <Label htmlFor="zipCode" className={labelClassName}>
                   Postal code
-                </label>
+                </Label>
 
-                <input
+                <Input
                   id="zipCode"
                   autoComplete="postal-code"
                   placeholder="e.g. 4700-001"
@@ -259,11 +265,11 @@ export default function NewStorePage() {
               </div>
 
               <div>
-                <label htmlFor="timezone" className={labelClassName}>
+                <Label htmlFor="timezone" className={labelClassName}>
                   Timezone
-                </label>
+                </Label>
 
-                <input
+                <Input
                   id="timezone"
                   spellCheck={false}
                   autoCapitalize="none"

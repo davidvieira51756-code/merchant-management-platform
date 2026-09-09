@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 
 import LogoutButton from "./logout-button";
@@ -158,9 +159,9 @@ export default async function DashboardPage() {
                 Your stores
               </h2>
 
-              <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium tabular-nums text-secondary-foreground">
+              <Badge variant="secondary" className="h-auto rounded-md border-0 bg-secondary px-2 py-0.5 text-xs font-medium tabular-nums text-secondary-foreground">
                 {stores.length}
-              </span>
+              </Badge>
             </div>
 
             <p className="mt-1 text-sm text-muted-foreground">
@@ -210,8 +211,9 @@ export default async function DashboardPage() {
                             {store.name}
                           </h3>
 
-                          <span
-                            className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                          <Badge
+                            variant="secondary"
+                            className={`h-auto border-0 inline-flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
                               store.active
                                 ? "bg-emerald-50 text-emerald-700"
                                 : "bg-secondary text-secondary-foreground"
@@ -226,7 +228,7 @@ export default async function DashboardPage() {
                               }`}
                             />
                             {store.active ? "Active" : "Inactive"}
-                          </span>
+                          </Badge>
                         </div>
 
                         <p className="mt-1.5 break-words text-sm text-muted-foreground">

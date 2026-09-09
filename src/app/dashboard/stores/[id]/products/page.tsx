@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { buttonVariants } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/lib/supabase/server";
 
 import RemoveProductButton from "./remove-product-button";
@@ -91,9 +92,9 @@ export default async function ProductsPage({
               Products
             </h2>
 
-            <span className="rounded-md bg-secondary px-2 py-0.5 text-xs font-medium tabular-nums text-secondary-foreground">
+            <Badge variant="secondary" className="h-auto rounded-md border-0 bg-secondary px-2 py-0.5 text-xs font-medium tabular-nums text-secondary-foreground">
               {products.length}
-            </span>
+            </Badge>
           </div>
 
           {products.length === 0 ? (
@@ -172,8 +173,9 @@ export default async function ProductsPage({
                     <div>
                       <span className="sr-only">Availability: </span>
 
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
+                      <Badge
+                        variant="secondary"
+                        className={`h-auto border-0 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${
                           product.available
                             ? "bg-emerald-50 text-emerald-700"
                             : "bg-secondary text-secondary-foreground"
@@ -190,7 +192,7 @@ export default async function ProductsPage({
                         {product.available
                           ? "Available"
                           : "Unavailable"}
-                      </span>
+                      </Badge>
                     </div>
 
                     <div className="flex min-w-0 items-start gap-2 border-t border-border/60 pt-3 lg:justify-center lg:border-0 lg:pt-0">
