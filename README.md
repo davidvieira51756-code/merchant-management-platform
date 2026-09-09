@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Merchant Management Platform
 
-## Getting Started
+A small dashboard where merchants can manage their stores and each store's products. Supabase provides authentication and the PostgreSQL database, while Row Level Security keeps each merchant's data separate.
 
-First, run the development server:
+## Features
+
+- Email and password signup, login, confirmation, and logout
+- Create, view, edit, and deactivate stores
+- Create, view, edit, and remove products
+- Tenant isolation enforced by PostgreSQL Row Level Security (RLS)
+- Form validation with Zod and React Hook Form
+
+## Tech Stack
+
+- Next.js 16, React 19, and TypeScript
+- Tailwind CSS and ShadCN UI components
+- Supabase Auth with SSR cookie handling
+- Supabase PostgreSQL with RLS
+- Zod and React Hook Form
+
+## How it works
+
+Users authenticate with Supabase. Each store has a `merchant_id` linked to the authenticated user, and each product belongs to a store through `store_id`.
+
+PostgreSQL RLS policies allow merchants to read and change only their own stores and products. Browser CRUD calls Supabase directly and relies on those policies for authorization.
+
+Stores are deactivated by setting `active = false` instead of deleting the row. Products can be removed permanently.
+
+## Run locally
+
+Requirements: Node.js, npm, and Docker. The Supabase CLI is installed with the project dependencies.
+
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Start local Supabase:
+
+```bash
+npx supabase start
+```
+
+3. Apply migrations and load the seed data:
+
+```bash
+npx supabase db reset
+```
+
+4. Create `.env.local` from `.env.example`:
+
+```bash
+cp .env.example .env.local
+```
+
+Set these values using the local credentials printed by `npx supabase status`:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=http://127.0.0.1:55431
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=<local-publishable-key>
+```
+
+5. Start Next.js:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://127.0.0.1:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Useful commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run lint
+npm run build
+npx supabase db reset
+```
 
-## Learn More
+## Main technical decisions
 
-To learn more about Next.js, take a look at the following resources:
+- Next.js App Router separates server-rendered pages from client-side forms.
+- Supabase SSR clients keep authentication sessions in cookies.
+- The email confirmation Route Handler verifies a Supabase token hash before creating a session.
+- Create, update, deactivate, and delete operations verify that an affected row is returned before reporting success.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Notes
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Seeded Auth users are local fixtures for RLS testing, not login accounts.
+- Browser CRUD is intentionally protected by PostgreSQL RLS.
+- Hosted email confirmation requires enabling email confirmation, configuring the Site URL and redirect allow-list, and updating the Supabase confirmation email template to target `/auth/confirm`.
