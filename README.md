@@ -75,6 +75,7 @@ Open http://127.0.0.1:3000.
 npm run lint
 npm run build
 npx supabase db reset
+npx supabase test db
 ```
 
 ## Main technical decisions
